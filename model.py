@@ -31,7 +31,7 @@ class NMT(nn.Module):
         self.EEM = nn.Embedding(num_embeddings=36616, embedding_dim=300)
         self.EEM.weight.data = params['encoder.embeddings.emb_luts.0.weight']
         # encoding
-        self.ENC = nn.RNN(input_size=300, hidden_size=512, bidirectional=True)
+        self.ENC = nn.LSTM(input_size=300, hidden_size=512, bidirectional=True)
         self.ENC.weight_ih_l0.data = params['encoder.rnn.weight_ih_l0']
         self.ENC.weight_hh_l0.data = params['encoder.rnn.weight_hh_l0']
         self.ENC.bias_ih_l0.data =  params['encoder.rnn.bias_ih_l0']
@@ -42,11 +42,11 @@ class NMT(nn.Module):
         self.ENC.bias_hh_l0_reverse.data =  params['encoder.rnn.bias_hh_l0_reverse']
         # attention
         self.ATT = ATTN(1024, 2048)
-        self.ATT.Wi.data = params['decoder.attn.linear_in.weight'] # should we include .data here?
-        self.ATT.Wo.data = params['decoder.attn.linear_out.weight'] # same question
+        self.ATT.Wi = params['decoder.attn.linear_in.weight'] # should we include .data here?
+        self.ATT.Wo = params['decoder.attn.linear_out.weight'] # same question
         # decoding
-        self.DEC = nn.RNN(input_size=1324, hidden_size=1024)
-        self.DEC.weight_ih_l0.data =    params['decoder.rnn.layers.0.weight_ih']
+        self.DEC = nn.LSTM(input_size=1324, hidden_size=1024)
+        self.DEC.weight_ih_l0.data = params['decoder.rnn.layers.0.weight_ih']
         self.DEC.weight_hh_l0.data = params['decoder.rnn.layers.0.weight_hh']
         self.DEC.bias_ih_l0.data = params['decoder.rnn.layers.0.bias_ih']
         self.DEC.bias_hh_l0.data = params['decoder.rnn.layers.0.bias_hh']
@@ -57,6 +57,9 @@ class NMT(nn.Module):
         # decoding embedding
         self.DEM = nn.Embedding(num_embeddings=23262, embedding_dim=300)
         self.DEM.weight.data = params['decoder.embeddings.emb_luts.0.weight']
+        # miscellaneous
+        self.softmax = nn.Softmax()
+        self.tanh = nn.Tanh()
     
     def forward(self, input):
         output = self.EEM(input)
