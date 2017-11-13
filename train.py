@@ -39,11 +39,14 @@ parser.add_argument("--gpuid", default=[], nargs='+', type=int,
                     help="ID of gpu device to use. Empty implies cpu usage.")
 # feel free to add more arguments as you need
 
-def main(options):
 
-  use_cuda = (len(options.gpuid) >= 1)
-  if options.gpuid:
-    cuda.set_device(options.gpuid[0])
+def to_var(input, volatile=False):
+    x = Variable(input, volatile=volatile)
+    if torch.cuda.is_available():
+        x = x.cuda()
+    return x
+
+def main(options):
 
   src_train, src_dev, src_test, src_vocab = torch.load(open(options.data_file + "." + options.src_lang, 'rb'))
   trg_train, trg_dev, trg_test, trg_vocab = torch.load(open(options.data_file + "." + options.trg_lang, 'rb'))
@@ -56,7 +59,7 @@ def main(options):
   trg_vocab_size = len(trg_vocab)
 
   nmt = NMT(trg_vocab_size) # TODO: add more arguments as necessary 
-  if use_cuda > 0:
+  if torch.cuda.is_available():
     nmt.cuda()
   else:
     nmt.cpu()
@@ -70,15 +73,10 @@ def main(options):
     logging.info("At {0}-th epoch.".format(epoch_i))
     # srange generates a lazy sequence of shuffled range
     for i, batch_i in enumerate(utils.rand.srange(len(batched_train_src))):
-      train_src_batch = Variable(batched_train_src[batch_i])  # of size (src_seq_len, batch_size)
-      train_trg_batch = Variable(batched_train_trg[batch_i])  # of size (src_seq_len, batch_size)
-      train_src_mask = Variable(batched_train_src_mask[batch_i])
-      train_trg_mask = Variable(batched_train_trg_mask[batch_i])
-      if use_cuda:
-        train_src_batch = train_src_batch.cuda()
-        train_trg_batch = train_trg_batch.cuda()
-        train_src_mask = train_src_mask.cuda()
-        train_trg_mask = train_trg_mask.cuda()
+      train_src_batch = to_var(batched_train_src[batch_i])  # of size (src_seq_len, batch_size)
+      train_trg_batch = to_var(batched_train_trg[batch_i])  # of size (src_seq_len, batch_size)
+      train_src_mask = to_var(batched_train_src_mask[batch_i])
+      train_trg_mask = to_var(batched_train_trg_mask[batch_i])
 
       sys_out_batch = nmt(train_src_batch, train_trg_batch)  # (trg_seq_len, batch_size, trg_vocab_size) # TODO: add more arguments as necessary 
       train_trg_mask = train_trg_mask.view(-1)
@@ -96,15 +94,10 @@ def main(options):
     # validation -- this is a crude esitmation because there might be some paddings at the end
     dev_loss = 0.0
     for batch_i in range(len(batched_dev_src)):
-      dev_src_batch = Variable(batched_dev_src[batch_i], volatile=True)
-      dev_trg_batch = Variable(batched_dev_trg[batch_i], volatile=True)
-      dev_src_mask = Variable(batched_dev_src_mask[batch_i], volatile=True)
-      dev_trg_mask = Variable(batched_dev_trg_mask[batch_i], volatile=True)
-      if use_cuda:
-        dev_src_batch = dev_src_batch.cuda()
-        dev_trg_batch = dev_trg_batch.cuda()
-        dev_src_mask = dev_src_mask.cuda()
-        dev_trg_mask = dev_trg_mask.cuda()
+      dev_src_batch = to_var(batched_dev_src[batch_i], volatile=True)
+      dev_trg_batch = to_var(batched_dev_trg[batch_i], volatile=True)
+      dev_src_mask = to_var(batched_dev_src_mask[batch_i], volatile=True)
+      dev_trg_mask = to_var(batched_dev_trg_mask[batch_i], volatile=True)
 
       sys_out_batch = nmt(dev_src_batch)  # (trg_seq_len, batch_size, trg_vocab_size) # TODO: add more arguments as necessary 
       dev_trg_mask = dev_trg_mask.view(-1)
