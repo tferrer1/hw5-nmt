@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import dill
+from torch.autograd import Variable
 
 params = torch.load(open("data/model.param", 'rb'), pickle_module=dill)
 
@@ -12,15 +13,18 @@ def to_var(input, volatile=False):
 
 class ATTN(nn.Module):
     def __init__(self, in_dim, out_dim):
-        def super(ATTN, self):
-            self.Wi = nn.Linear(in_dim, in_dim, bias=False)
-            self.Wo = nn.Linear(out_dim, in_dim, bias=False)
-        def forward(self, input, h):
-            score = torch.mm(input, self.Wi(h))
-            score = nn.Softmax(score)
-            s_tilde = torch.sum(score * input, dim=0)
-            c_t = nn.Tanh(self.Wo(torch.cat([s_tilde, h], dim=1)))
-            return c_t
+        super(ATTN, self).__init__()
+        self.Wi = nn.Linear(in_dim, in_dim, bias=False)
+        self.Wo = nn.Linear(out_dim, in_dim, bias=False)
+        self.softmax = nn.Softmax()
+        self.tanh = nn.Tanh()
+    def forward(self, input, h):
+        semi = torch.unsqueeze(self.Wi(h), 0).expand_as(input)
+        score = torch.t(self.softmax(torch.t(torch.sum(input * semi, dim=2))))
+        score = torch.unsqueeze(score,2)
+        s_tilde = torch.sum(score * input, dim=0)
+        c_t = self.tanh(self.Wo(torch.cat([s_tilde, h], dim=1)))
+        return c_t
 
 class NMT(nn.Module):
     def __init__(self, trg_vocab_size):
@@ -64,16 +68,16 @@ class NMT(nn.Module):
         encoder_input = self.EEMB(input_src_batch)
         encoder_output, _ = self.ENC(encoder_input)
 
-        seq_len = encoder_output.size[0]
-        batch_size = encoder_output.size[1]
+        seq_len = encoder_output.size()[0]
+        batch_size = encoder_output.size()[1]
 
-        hidden = to_var(torch.rand(batch_size, decoder_hidden_size))
-        context = to_var(torch.rand(batch_size, decoder_hidden_size))
+        hidden = to_var(torch.rand(batch_size, 1024))
+        context = to_var(torch.rand(batch_size, 1024))
 
         output = to_var(torch.zeros(sent_len, batch_size, 23262))
 
         for i in xrange(1, sent_len):
-            c_t = ATTN(encoder_output, hidden)
+            c_t = self.ATTN(encoder_output, hidden)
             decoder_input = torch.cat([c_t, self.DEMB(input_tgt_batch[i-1])], dim=1)
             decoder_input = decoder_input.unsqueeze(0)
 
