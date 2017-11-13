@@ -3,8 +3,6 @@ import torch.nn as nn
 import dill
 from torch.autograd import Variable
 
-params = torch.load(open("data/model.param", 'rb'), pickle_module=dill)
-
 def to_var(input, volatile=False):
     x = Variable(input, volatile=volatile)
     if torch.cuda.is_available():
@@ -29,6 +27,7 @@ class ATTN(nn.Module):
 class NMT(nn.Module):
     def __init__(self, trg_vocab_size):
         super(NMT, self).__init__()
+        params = torch.load(open("data/model.param", 'rb'), pickle_module=dill)
         # encoding embedding
         self.EEMB = nn.Embedding(num_embeddings=36616, embedding_dim=300)
         self.EEMB.weight.data = params['encoder.embeddings.emb_luts.0.weight']
@@ -62,23 +61,36 @@ class NMT(nn.Module):
         # miscellaneous
         self.logsoftmax = nn.LogSoftmax()
     
-    def forward(self, input_src_batch, input_trg_batch):
-        sent_len = input_trg_batch.size()[0]
+    def forward(self, input_src_batch, input_trg_batch=None):
+        training = input_trg_batch != None
+        
+        if training:
+            sent_len = input_trg_batch.size()[0]
+        else:
+            sent_len = input_src_batch.size()[0]
 
         encoder_input = self.EEMB(input_src_batch)
-        encoder_output, ___ = self.ENC(encoder_input)
+        encoder_output, (hidden, context) = self.ENC(encoder_input)
 
         seq_len = encoder_output.size()[0]
         batch_size = encoder_output.size()[1]
 
-        hidden = to_var(torch.rand(batch_size, 1024))
-        context = to_var(torch.rand(batch_size, 1024))
+        hidden = hidden.permute(1,2,0).contiguous().view(batch_size, 1024)
+        context = context.permute(1,2,0).contiguous().view(batch_size, 1024)
 
-        output = to_var(torch.zeros(sent_len, batch_size, 23262))
+        if training:
+            output = to_var(torch.zeros(sent_len, batch_size, 23262))
+        else:
+            output = to_var(torch.zeros(1, batch_size, 23262))
+            word = to_var(torch.LongTensor(batch_size).fill_(2)) #
 
         for i in xrange(1, sent_len):
             c_t = self.ATTN(encoder_output, hidden)
-            decoder_input = torch.cat([c_t, self.DEMB(input_trg_batch[i-1])], dim=1)
+            if training:
+                decoder_input = torch.cat([c_t, self.DEMB(input_trg_batch[i-1])], dim=1)
+            else:
+                decoder_input = torch.cat([c_t, self.DEMB(word)], dim=1)
+
             decoder_input = decoder_input.unsqueeze(0)
 
             hidden = hidden.unsqueeze(0); context = context.unsqueeze(0)
@@ -88,6 +100,11 @@ class NMT(nn.Module):
             hidden = hidden[0]; context = context[0]
 
             word = self.logsoftmax(self.GEN(hidden))
-            output[i] = word
+
+            if training:
+                output[i] = word
+            else:
+                output = torch.cat([output, torch.unsqueeze(word, 0)], 0)
+                _, word = torch.max(word, dim=1) 
 
         return output
