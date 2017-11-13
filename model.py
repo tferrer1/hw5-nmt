@@ -19,11 +19,9 @@ class ATTN(nn.Module):
         self.softmax = nn.Softmax()
         self.tanh = nn.Tanh()
     def forward(self, input, h):
-        #semi = torch.unsqueeze(self.Wi(h), 0).expand_as(input)
-        semi = self.Wi(h).view(1, input.size()[1], 1024).expand_as(input)
+        semi = torch.unsqueeze(self.Wi(h), 0).expand_as(input)
         score = torch.t(self.softmax(torch.t(torch.sum(input * semi, dim=2))))
-        #score = torch.unsqueeze(score,2)
-        score = score.contiguous().view(input.size()[0], input.size()[1], 1)
+        score = torch.unsqueeze(score.contiguous(),2)
         s_tilde = torch.sum(score * input, dim=0)
         c_t = self.tanh(self.Wo(torch.cat([s_tilde, h], dim=1)))
         return c_t
@@ -87,7 +85,7 @@ class NMT(nn.Module):
 
             _, (hidden,context) = self.DEC(decoder_input, (hidden, context))
 
-            hidden = hidden.squeeze(); context = context.squeeze()
+            hidden = hidden[0]; context = context[0]
 
             word = self.logsoftmax(self.GEN(hidden))
             output[i] = word
