@@ -60,8 +60,11 @@ class NMT(nn.Module):
     
     def forward(self, input):
         output = self.EEM(input)
-        hidden, output = self.ENC(output)
+        hidden1, output1 = self.ENC(output)
         context = self.ATT(output, hidden) #prolly wrong
+        hidden2, output2 = self.DEC(context, OWE_t1)
+        self.GEN(output2)
+        
         
 
         return
