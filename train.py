@@ -73,12 +73,15 @@ def main(options):
   for epoch_i in range(options.epochs):
     logging.info("At {0}-th epoch.".format(epoch_i))
     # srange generates a lazy sequence of shuffled range
+    rr=0
     for i, batch_i in enumerate(utils.rand.srange(len(batched_train_src))):
       train_src_batch = to_var(batched_train_src[batch_i])  # of size (src_seq_len, batch_size)
       train_trg_batch = to_var(batched_train_trg[batch_i])  # of size (src_seq_len, batch_size)
       train_src_mask = to_var(batched_train_src_mask[batch_i])
       train_trg_mask = to_var(batched_train_trg_mask[batch_i])
-
+      if rr == 5:
+        break
+      rr += 1
       sys_out_batch = nmt(train_src_batch, train_trg_batch, training=True)  # (trg_seq_len, batch_size, trg_vocab_size) # TODO: add more arguments as necessary 
       train_trg_mask = train_trg_mask.view(-1)
       train_trg_batch = train_trg_batch.view(-1)
@@ -94,6 +97,7 @@ def main(options):
 
     # validation -- this is a crude esitmation because there might be some paddings at the end
     dev_loss = 0.0
+
     for batch_i in range(len(batched_dev_src)):
       dev_src_batch = to_var(batched_dev_src[batch_i], volatile=True)
       dev_trg_batch = to_var(batched_dev_trg[batch_i], volatile=True)
@@ -106,7 +110,8 @@ def main(options):
       dev_trg_batch = dev_trg_batch.masked_select(dev_trg_mask)
       dev_trg_mask = dev_trg_mask.unsqueeze(1).expand(len(dev_trg_mask), trg_vocab_size)
       sys_out_batch = sys_out_batch.view(-1, trg_vocab_size)
-      sys_out_batch = sys_out_batch.masked_select(dev_trg_mask).view(-1, trg_vocab_size)
+      #sys_out_batch = sys_out_batch.masked_select(dev_trg_mask).view(-1, trg_vocab_size)
+      sys_out_batch = sys_out_batch.masked_select(dev_trg_mask)
       loss = criterion(sys_out_batch, dev_trg_batch)
       logging.debug("dev loss at batch {0}: {1}".format(batch_i, loss.data[0]))
       dev_loss += loss

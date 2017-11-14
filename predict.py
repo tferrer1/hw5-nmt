@@ -51,25 +51,6 @@ def main(options):
 
   _, src_dev, src_test, src_vocab = torch.load(open(options.data_file + "." + options.src_lang, 'rb'))
   _, trg_dev, trg_test, trg_vocab = torch.load(open(options.data_file + "." + options.trg_lang, 'rb'))
-  
-  
-  # for sent in src_test:
-  #   s = ""
-  #   for ix in sent:
-  #     s += src_vocab.itos[ix] + " "
-  #   print s.encode('utf-8')
-  #   break
-  
-
-  # for sent in trg_test:
-  #   s = ""
-  #   for ix in sent:
-  #     s += trg_vocab.itos[ix] + " "
-  #   print s.encode('utf-8')
-  #   break
-
-  print "start", trg_vocab.itos[2]
-  print "end", trg_vocab.itos[3]
 
   batched_test_src, batched_test_src_mask, sort_index = utils.tensor.advanced_batchize(src_test, options.batch_size, src_vocab.stoi["<blank>"])
   batched_dev_src, batched_dev_src_mask, sort_index = utils.tensor.advanced_batchize(src_dev, options.batch_size, src_vocab.stoi["<blank>"])
