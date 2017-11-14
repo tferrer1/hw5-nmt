@@ -1,0 +1,18 @@
+IY2 EY1 OW0 UH2 IY0 
+T ER0 T UW2 W 
+<unk> Y M Z Y N EY1 EY1 
+<unk> HH W UH0 AH0 IH0 
+<unk> IH0 AE2 M M AY1 french french Y 
+<unk> AO2 AO2 UH0 AH0 # 
+<unk> AO2 AO2 DH 
+<unk> AH0 IH0 K AO0 T 
+AA0 french Y N EY1 EY1 IY0 AA0 
+IY2 UW0 Y N EY1 EY1 
+AA0 R ER2 AW1 K EH1 EH1 M Z 
+<unk> Y N EY1 EY1 ER0 SH 
+<unk> AH0 B V S 
+<unk> W B B B B B B 
+AA0 french french Y N EY1 
+IY2 OW0 HH IY0 IY0 AA0 french HH 
+T ER0 T UW2 W UH2 
+<unk> AH0 IH0 AE2 M 

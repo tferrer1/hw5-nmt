@@ -16,13 +16,13 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S', level=logging.DEBUG)
 
 parser = argparse.ArgumentParser(description="Starter code for JHU CS468 Machine Translation HW5.")
-parser.add_argument("--data_file", required=True,
+parser.add_argument("--data_file", default="data/hw5",
                     help="File prefix for training set.")
-parser.add_argument("--src_lang", default="de",
-                    help="Source Language. (default = de)")
-parser.add_argument("--trg_lang", default="en",
-                    help="Target Language. (default = en)")
-parser.add_argument("--model_file", required=True,
+parser.add_argument("--src_lang", default="words",
+                    help="Source Language. (default = words)")
+parser.add_argument("--trg_lang", default="phoneme",
+                    help="Target Language. (default = phoneme)")
+parser.add_argument("--model_file", default="model.py",
                     help="Location to dump the models.")
 parser.add_argument("--batch_size", default=1, type=int,
                     help="Batch size for training. (default=1)")
@@ -49,14 +49,35 @@ def to_var(input, volatile=True):
 
 def main(options):
 
-  _, _, src_test, src_vocab = torch.load(open(options.data_file + "." + options.src_lang, 'rb'))
-  _, _, _, trg_vocab = torch.load(open(options.data_file + "." + options.trg_lang, 'rb'))
+  _, src_dev, src_test, src_vocab = torch.load(open(options.data_file + "." + options.src_lang, 'rb'))
+  _, trg_dev, trg_test, trg_vocab = torch.load(open(options.data_file + "." + options.trg_lang, 'rb'))
   
-  batched_test_src, batched_test_src_mask, sort_index = utils.tensor.advanced_batchize(src_test, options.batch_size, src_vocab.stoi["<blank>"])
+  
+  # for sent in src_test:
+  #   s = ""
+  #   for ix in sent:
+  #     s += src_vocab.itos[ix] + " "
+  #   print s.encode('utf-8')
+  #   break
+  
 
+  # for sent in trg_test:
+  #   s = ""
+  #   for ix in sent:
+  #     s += trg_vocab.itos[ix] + " "
+  #   print s.encode('utf-8')
+  #   break
+
+  print "start", trg_vocab.itos[2]
+  print "end", trg_vocab.itos[3]
+
+  batched_test_src, batched_test_src_mask, sort_index = utils.tensor.advanced_batchize(src_test, options.batch_size, src_vocab.stoi["<blank>"])
+  batched_dev_src, batched_dev_src_mask, sort_index = utils.tensor.advanced_batchize(src_dev, options.batch_size, src_vocab.stoi["<blank>"])
+
+  src_vocab_size = len(src_vocab)
   trg_vocab_size = len(trg_vocab)
 
-  nmt = NMT(trg_vocab_size)
+  nmt = NMT(src_vocab_size, trg_vocab_size)
   #nmt = torch.load(open('results/model.nll.epoch', 'rb'), pickle_module = "dill")
   nmt.eval()
 
@@ -71,7 +92,15 @@ def main(options):
       batch_result = nmt(test_src_batch)
       s = ""
       for ix in batch_result:
-      	s += trg_vocab.itos[np.argmax(ix.data.cpu().numpy())] + " "
+        idx = np.argmax(ix.data.cpu().numpy())
+
+        if idx == 2: # if <s>, don't write it
+          continue
+        if idx == 3: # if </s>, end the loop
+          break
+        
+        s += trg_vocab.itos[idx] + " "
+
       print s.encode('utf-8')
       s += '\n'
       f_write.write(s.encode('utf-8'))  	

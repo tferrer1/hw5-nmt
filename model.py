@@ -25,45 +25,48 @@ class ATTN(nn.Module):
         return c_t
 
 class NMT(nn.Module):
-    def __init__(self, trg_vocab_size):
+    def __init__(self, src_vocab_size, trg_vocab_size, model_params=None):
         super(NMT, self).__init__()
-        params = torch.load(open("data/model.param", 'rb'), pickle_module=dill)
+        self.src_vocab_size = src_vocab_size
+        self.trg_vocab_size = trg_vocab_size
         # encoding embedding
-        self.EEMB = nn.Embedding(num_embeddings=36616, embedding_dim=300)
-        self.EEMB.weight.data = params['encoder.embeddings.emb_luts.0.weight']
+        self.EEMB = nn.Embedding(num_embeddings=src_vocab_size, embedding_dim=300)
         # encoding
         self.ENC = nn.LSTM(input_size=300, hidden_size=512, bidirectional=True)
-        self.ENC.weight_ih_l0.data = params['encoder.rnn.weight_ih_l0']
-        self.ENC.weight_hh_l0.data = params['encoder.rnn.weight_hh_l0']
-        self.ENC.bias_ih_l0.data =  params['encoder.rnn.bias_ih_l0']
-        self.ENC.bias_hh_l0.data =  params['encoder.rnn.bias_hh_l0']
-        self.ENC.weight_ih_l0_reverse.data = params['encoder.rnn.weight_ih_l0_reverse']
-        self.ENC.weight_hh_l0_reverse.data = params['encoder.rnn.weight_hh_l0_reverse']
-        self.ENC.bias_ih_l0_reverse.data =  params['encoder.rnn.bias_ih_l0_reverse']
-        self.ENC.bias_hh_l0_reverse.data =  params['encoder.rnn.bias_hh_l0_reverse']
         # attention
         self.ATTN = ATTN(1024, 2048)
-        self.ATTN.Wi.weight.data = params['decoder.attn.linear_in.weight']
-        self.ATTN.Wo.weight.data = params['decoder.attn.linear_out.weight']
         # decoding
-        self.DEC = nn.LSTM(input_size=1324, hidden_size=1024)
-        self.DEC.weight_ih_l0.data = params['decoder.rnn.layers.0.weight_ih']
-        self.DEC.weight_hh_l0.data = params['decoder.rnn.layers.0.weight_hh']
-        self.DEC.bias_ih_l0.data = params['decoder.rnn.layers.0.bias_ih']
-        self.DEC.bias_hh_l0.data = params['decoder.rnn.layers.0.bias_hh']
+        #self.DEC = nn.LSTM(input_size=1324, hidden_size=1024)
+        self.DEC = nn.LSTMCell(input_size=1324, hidden_size=1024)
         # decoding embedding
         self.DEMB = nn.Embedding(num_embeddings=trg_vocab_size, embedding_dim=300)
-        self.DEMB.weight.data = params['decoder.embeddings.emb_luts.0.weight']
         # generator
         self.GEN = nn.Linear(in_features=1024, out_features=trg_vocab_size)
-        self.GEN.weight.data =  params['0.weight']
-        self.GEN.bias.data = params['0.bias']
         # miscellaneous
         self.logsoftmax = nn.LogSoftmax()
-    
-    def forward(self, input_src_batch, input_trg_batch=None):
-        training = input_trg_batch != None
-        
+
+        if model_params != None:
+            params = torch.load(open("data/model.param", 'rb'), pickle_module=dill)
+            self.EEMB.weight.data = params['encoder.embeddings.emb_luts.0.weight']
+            self.ENC.weight_ih_l0.data = params['encoder.rnn.weight_ih_l0']
+            self.ENC.weight_hh_l0.data = params['encoder.rnn.weight_hh_l0']
+            self.ENC.bias_ih_l0.data =  params['encoder.rnn.bias_ih_l0']
+            self.ENC.bias_hh_l0.data =  params['encoder.rnn.bias_hh_l0']
+            self.ENC.weight_ih_l0_reverse.data = params['encoder.rnn.weight_ih_l0_reverse']
+            self.ENC.weight_hh_l0_reverse.data = params['encoder.rnn.weight_hh_l0_reverse']
+            self.ENC.bias_ih_l0_reverse.data =  params['encoder.rnn.bias_ih_l0_reverse']
+            self.ENC.bias_hh_l0_reverse.data =  params['encoder.rnn.bias_hh_l0_reverse']
+            self.ATTN.Wi.weight.data = params['decoder.attn.linear_in.weight']
+            self.ATTN.Wo.weight.data = params['decoder.attn.linear_out.weight']
+            self.DEC.weight_ih.data = params['decoder.rnn.layers.0.weight_ih']
+            self.DEC.weight_hh.data = params['decoder.rnn.layers.0.weight_hh']
+            self.DEC.bias_ih.data = params['decoder.rnn.layers.0.bias_ih']
+            self.DEC.bias_hh.data = params['decoder.rnn.layers.0.bias_hh']
+            self.DEMB.weight.data = params['decoder.embeddings.emb_luts.0.weight']
+            self.GEN.weight.data =  params['0.weight']
+            self.GEN.bias.data = params['0.bias']
+
+    def forward(self, input_src_batch, input_trg_batch=None, training=False):        
         if training:
             sent_len = input_trg_batch.size()[0]
         else:
@@ -79,9 +82,11 @@ class NMT(nn.Module):
         context = context.permute(1,2,0).contiguous().view(batch_size, 1024)
 
         if training:
-            output = to_var(torch.zeros(sent_len, batch_size, 23262))
+            output = to_var(torch.zeros(sent_len, batch_size, self.trg_vocab_size))
         else:
-            output = to_var(torch.zeros(1, batch_size, 23262))
+            output = torch.zeros(1, batch_size, self.trg_vocab_size)
+            output[0,:,2] = 1 
+            output = to_var(output)
             word = to_var(torch.LongTensor(batch_size).fill_(2)) #
 
         for i in xrange(1, sent_len):
@@ -91,19 +96,23 @@ class NMT(nn.Module):
             else:
                 decoder_input = torch.cat([c_t, self.DEMB(word)], dim=1)
 
-            decoder_input = decoder_input.unsqueeze(0)
+            #decoder_input = decoder_input.unsqueeze(0)
 
-            hidden = hidden.unsqueeze(0); context = context.unsqueeze(0)
+            # hidden = hidden.unsqueeze(0)
+            # context = context.unsqueeze(0)
 
-            _, (hidden,context) = self.DEC(decoder_input, (hidden, context))
-
-            hidden = hidden[0]; context = context[0]
+            #_, (hidden,context) = self.DEC(decoder_input, (hidden, context))
+            (hidden, context) = self.DEC(decoder_input, (hidden, context))
+            # hidden = hidden[0]
+            # context = context[0]
 
             word = self.logsoftmax(self.GEN(hidden))
 
             if training:
                 output[i] = word
             else:
+                # print "output", output.size()
+                # print "word", word.size()
                 output = torch.cat([output, torch.unsqueeze(word, 0)], 0)
                 _, word = torch.max(word, dim=1) 
 

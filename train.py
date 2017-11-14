@@ -15,13 +15,13 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S', level=logging.DEBUG)
 
 parser = argparse.ArgumentParser(description="Starter code for JHU CS468 Machine Translation HW5.")
-parser.add_argument("--data_file", required=True,
+parser.add_argument("--data_file", default="data/hw5",
                     help="File prefix for training set.")
-parser.add_argument("--src_lang", default="de",
-                    help="Source Language. (default = de)")
-parser.add_argument("--trg_lang", default="en",
-                    help="Target Language. (default = en)")
-parser.add_argument("--model_file", required=True,
+parser.add_argument("--src_lang", default="words",
+                    help="Source Language. (default = words)")
+parser.add_argument("--trg_lang", default="phoneme",
+                    help="Target Language. (default = phoneme)")
+parser.add_argument("--model_file", default="model.py",
                     help="Location to dump the models.")
 parser.add_argument("--batch_size", default=1, type=int,
                     help="Batch size for training. (default=1)")
@@ -34,9 +34,9 @@ parser.add_argument("--learning_rate", "-lr", default=0.1, type=float,
 parser.add_argument("--momentum", default=0.9, type=float,
                     help="Momentum when performing SGD. (default=0.9)")
 parser.add_argument("--estop", default=1e-2, type=float,
-                    help="Early stopping criteria on the development set. (default=1e-2)")
+                    help="Early stopping criteria on the testelopment set. (default=1e-2)")
 parser.add_argument("--gpuid", default=[], nargs='+', type=int,
-                    help="ID of gpu device to use. Empty implies cpu usage.")
+                    help="ID of gpu testice to use. Empty implies cpu usage.")
 # feel free to add more arguments as you need
 
 
@@ -56,9 +56,10 @@ def main(options):
   batched_dev_src, batched_dev_src_mask, sort_index = utils.tensor.advanced_batchize(src_dev, options.batch_size, src_vocab.stoi["<blank>"])
   batched_dev_trg, batched_dev_trg_mask = utils.tensor.advanced_batchize_no_sort(trg_dev, options.batch_size, trg_vocab.stoi["<blank>"], sort_index)
 
+  src_vocab_size = len(src_vocab)
   trg_vocab_size = len(trg_vocab)
 
-  nmt = NMT(trg_vocab_size) # TODO: add more arguments as necessary 
+  nmt = NMT(src_vocab_size, trg_vocab_size) # TODO: add more arguments as necessary 
   if torch.cuda.is_available():
     nmt.cuda()
   else:
@@ -78,7 +79,7 @@ def main(options):
       train_src_mask = to_var(batched_train_src_mask[batch_i])
       train_trg_mask = to_var(batched_train_trg_mask[batch_i])
 
-      sys_out_batch = nmt(train_src_batch, train_trg_batch)  # (trg_seq_len, batch_size, trg_vocab_size) # TODO: add more arguments as necessary 
+      sys_out_batch = nmt(train_src_batch, train_trg_batch, training=True)  # (trg_seq_len, batch_size, trg_vocab_size) # TODO: add more arguments as necessary 
       train_trg_mask = train_trg_mask.view(-1)
       train_trg_batch = train_trg_batch.view(-1)
       train_trg_batch = train_trg_batch.masked_select(train_trg_mask)
