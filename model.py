@@ -19,9 +19,11 @@ class ATTN(nn.Module):
         self.softmax = nn.Softmax()
         self.tanh = nn.Tanh()
     def forward(self, input, h):
-        semi = torch.unsqueeze(self.Wi(h), 0).expand_as(input)
+        #semi = torch.unsqueeze(self.Wi(h), 0).expand_as(input)
+        semi = self.Wi(h).view(1, input.size()[1], 1024).expand_as(input)
         score = torch.t(self.softmax(torch.t(torch.sum(input * semi, dim=2))))
-        score = torch.unsqueeze(score,2)
+        #score = torch.unsqueeze(score,2)
+        score = score.contiguous().view(input.size()[0], input.size()[1], 1)
         s_tilde = torch.sum(score * input, dim=0)
         c_t = self.tanh(self.Wo(torch.cat([s_tilde, h], dim=1)))
         return c_t
@@ -62,11 +64,11 @@ class NMT(nn.Module):
         # miscellaneous
         self.logsoftmax = nn.LogSoftmax()
     
-    def forward(self, input_src_batch, input_tgt_batch):
-        sent_len = input_tgt_batch.size()[0]
+    def forward(self, input_src_batch, input_trg_batch):
+        sent_len = input_trg_batch.size()[0]
 
         encoder_input = self.EEMB(input_src_batch)
-        encoder_output, _ = self.ENC(encoder_input)
+        encoder_output, ___ = self.ENC(encoder_input)
 
         seq_len = encoder_output.size()[0]
         batch_size = encoder_output.size()[1]
@@ -78,7 +80,7 @@ class NMT(nn.Module):
 
         for i in xrange(1, sent_len):
             c_t = self.ATTN(encoder_output, hidden)
-            decoder_input = torch.cat([c_t, self.DEMB(input_tgt_batch[i-1])], dim=1)
+            decoder_input = torch.cat([c_t, self.DEMB(input_trg_batch[i-1])], dim=1)
             decoder_input = decoder_input.unsqueeze(0)
 
             hidden = hidden.unsqueeze(0); context = context.unsqueeze(0)
