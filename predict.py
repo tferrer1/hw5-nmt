@@ -54,12 +54,15 @@ def main(options):
 
   batched_test_src, batched_test_src_mask, sort_index = utils.tensor.advanced_batchize(src_test, options.batch_size, src_vocab.stoi["<blank>"])
   batched_dev_src, batched_dev_src_mask, sort_index = utils.tensor.advanced_batchize(src_dev, options.batch_size, src_vocab.stoi["<blank>"])
+  batched_test_trg, batched_test_trg_mask, sort_index = utils.tensor.advanced_batchize(trg_test, options.batch_size, trg_vocab.stoi["<blank>"])
+  batched_dev_trg, batched_dev_trg_mask, sort_index = utils.tensor.advanced_batchize(trg_dev, options.batch_size, trg_vocab.stoi["<blank>"])
+
 
   src_vocab_size = len(src_vocab)
   trg_vocab_size = len(trg_vocab)
 
   nmt = NMT(src_vocab_size, trg_vocab_size)
-  #nmt = torch.load(open('results/model.nll.epoch', 'rb'), pickle_module = "dill")
+  nmt = torch.load(open("model.py.nll_0.80.epoch_11", 'rb'))
   nmt.eval()
 
   if torch.cuda.is_available():
@@ -67,10 +70,12 @@ def main(options):
   else:
     nmt.cpu()
 
-  with open('data/output.txt', 'w') as f_write:
-    for batch_i in utils.rand.srange(len(batched_test_src)):
-      test_src_batch = to_var(batched_test_src[batch_i]) 
-      batch_result = nmt(test_src_batch)
+  with open('data/output2.txt', 'w') as f_write:
+    for batch_i in range(len(batched_test_src)):
+      test_src_batch = to_var(batched_test_src[batch_i], volatile=True) 
+      test_trg_batch = to_var(batched_test_trg[batch_i], volatile=True)
+
+      batch_result = nmt(test_src_batch, test_trg_batch)
       s = ""
       for ix in batch_result:
         idx = np.argmax(ix.data.cpu().numpy())
@@ -81,7 +86,7 @@ def main(options):
           break 
         s += trg_vocab.itos[idx] + " "
 
-      print s.encode('utf-8')
+      #print s.encode('utf-8')
       s += '\n'
       f_write.write(s.encode('utf-8'))  	
 
@@ -92,25 +97,3 @@ if __name__ == "__main__":
   if ret[1]:
     logging.warning("unknown arguments: {0}".format(parser.parse_known_args()[1]))
   main(options)
-
-
-
-
-  #  # main testing loop
-  # last_test_avg_loss = float("inf")
-  # for epoch_i in range(options.epochs):
-  #   logging.info("At {0}-th epoch.".format(epoch_i))
-  #   # srange generates a lazy sequence of shuffled range
-  #   for i, batch_i in enumerate(utils.rand.srange(len(batched_test_src))):
-  #     test_src_batch = to_var(batched_test_src[batch_i])  # of size (src_seq_len, batch_size)
-  #     test_trg_batch = to_var(batched_test_trg[batch_i])  # of size (src_seq_len, batch_size)
-  #     test_src_mask = to_var(batched_test_src_mask[batch_i])
-  #     test_trg_mask = to_var(batched_test_trg_mask[batch_i])
-
-  #     sys_out_batch = nmt(test_src_batch, test_trg_batch)  # (trg_seq_len, batch_size, trg_vocab_size) # TODO: add more arguments as necessary 
-  #     test_trg_mask = test_trg_mask.view(-1)
-  #     test_trg_batch = test_trg_batch.view(-1)
-  #     test_trg_batch = test_trg_batch.masked_select(test_trg_mask)
-  #     test_trg_mask = test_trg_mask.unsqueeze(1).expand(len(test_trg_mask), trg_vocab_size)
-  #     sys_out_batch = sys_out_batch.view(-1, trg_vocab_size)
-  #     sys_out_batch = sys_out_batch.masked_select(test_trg_mask).view(-1, trg_vocab_size)
