@@ -32,8 +32,8 @@ class NMT(nn.Module):
 
         self.ENC_esize = 30
         self.DEC_esize = 30
-        self.ENC_hsize = 512
-        self.DEC_hsize = 1024
+        self.ENC_hsize = 64
+        self.DEC_hsize = 128
         # encoding embedding
         self.EEMB = nn.Embedding(num_embeddings=src_vocab_size, embedding_dim=self.ENC_esize)
         # encoding
