@@ -78,8 +78,7 @@ def main(options):
         if idx == 2: # if <s>, don't write it
           continue
         if idx == 3: # if </s>, end the loop
-          break
-        
+          break 
         s += trg_vocab.itos[idx] + " "
 
       print s.encode('utf-8')
