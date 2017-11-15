@@ -46,7 +46,7 @@ class NMT(nn.Module):
         # decoding embedding
         self.DEMB = nn.Embedding(num_embeddings=trg_vocab_size, embedding_dim=self.DEC_esize)
         # generator
-        self.GEN = nn.Linear(in_features=self.DEC_esize, out_features=trg_vocab_size)
+        self.GEN = nn.Linear(in_features=self.DEC_hsize, out_features=trg_vocab_size)
         # miscellaneous
         self.logsoftmax = nn.LogSoftmax()
 
