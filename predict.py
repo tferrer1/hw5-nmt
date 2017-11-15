@@ -52,9 +52,6 @@ def main(options):
   _, _, src_test, src_vocab = torch.load(open(options.data_file + "." + options.src_lang, 'rb'))
   _, _, trg_test, trg_vocab = torch.load(open(options.data_file + "." + options.trg_lang, 'rb'))
 
-  #batched_test_src, batched_test_src_mask, sort_index = utils.tensor.advanced_batchize(src_test, options.batch_size, src_vocab.stoi["<blank>"])
-  #batched_test_trg, batched_test_trg_mask, sort_index = utils.tensor.advanced_batchize(trg_test, options.batch_size, trg_vocab.stoi["<blank>"])
-
   src_vocab_size = len(src_vocab)
   trg_vocab_size = len(trg_vocab)
 
