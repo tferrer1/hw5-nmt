@@ -49,14 +49,11 @@ def to_var(input, volatile=True):
 
 def main(options):
 
-  _, src_dev, src_test, src_vocab = torch.load(open(options.data_file + "." + options.src_lang, 'rb'))
-  _, trg_dev, trg_test, trg_vocab = torch.load(open(options.data_file + "." + options.trg_lang, 'rb'))
+  _, _, src_test, src_vocab = torch.load(open(options.data_file + "." + options.src_lang, 'rb'))
+  _, _, trg_test, trg_vocab = torch.load(open(options.data_file + "." + options.trg_lang, 'rb'))
 
-  batched_test_src, batched_test_src_mask, sort_index = utils.tensor.advanced_batchize(src_test, options.batch_size, src_vocab.stoi["<blank>"])
-  batched_dev_src, batched_dev_src_mask, sort_index = utils.tensor.advanced_batchize(src_dev, options.batch_size, src_vocab.stoi["<blank>"])
-  batched_test_trg, batched_test_trg_mask, sort_index = utils.tensor.advanced_batchize(trg_test, options.batch_size, trg_vocab.stoi["<blank>"])
-  batched_dev_trg, batched_dev_trg_mask, sort_index = utils.tensor.advanced_batchize(trg_dev, options.batch_size, trg_vocab.stoi["<blank>"])
-
+  #batched_test_src, batched_test_src_mask, sort_index = utils.tensor.advanced_batchize(src_test, options.batch_size, src_vocab.stoi["<blank>"])
+  #batched_test_trg, batched_test_trg_mask, sort_index = utils.tensor.advanced_batchize(trg_test, options.batch_size, trg_vocab.stoi["<blank>"])
 
   src_vocab_size = len(src_vocab)
   trg_vocab_size = len(trg_vocab)
@@ -70,10 +67,10 @@ def main(options):
   else:
     nmt.cpu()
 
-  with open('data/output2.txt', 'w') as f_write:
-    for batch_i in range(len(batched_test_src)):
-      test_src_batch = to_var(batched_test_src[batch_i], volatile=True) 
-      test_trg_batch = to_var(batched_test_trg[batch_i], volatile=True)
+  with open('data/output3.txt', 'w') as f_write:
+    for i in range(len(src_test)):
+      test_src_batch = to_var(torch.unsqueeze(src_test[i],1), volatile=True) 
+      test_trg_batch = to_var(torch.unsqueeze(trg_test[i],1), volatile=True)
 
       batch_result = nmt(test_src_batch, test_trg_batch)
       s = ""
@@ -87,6 +84,7 @@ def main(options):
         s += trg_vocab.itos[idx] + " "
 
       #print s.encode('utf-8')
+      #if len(s): s += '\n'
       s += '\n'
       f_write.write(s.encode('utf-8'))  	
 
