@@ -30,10 +30,10 @@ class NMT(nn.Module):
         self.src_vocab_size = src_vocab_size
         self.trg_vocab_size = trg_vocab_size
 
-        self.ENC_esize = 100
-        self.DEC_esize = 100
-        self.ENC_hsize = 256
-        self.DEC_hsize = 512
+        self.ENC_esize = 30
+        self.DEC_esize = 30
+        self.ENC_hsize = 64
+        self.DEC_hsize = 128
         # encoding embedding
         self.EEMB = nn.Embedding(num_embeddings=src_vocab_size, embedding_dim=self.ENC_esize)
         # encoding
@@ -61,8 +61,8 @@ class NMT(nn.Module):
         hidden = hidden.permute(1,2,0).contiguous().view(batch_size, self.ENC_hsize*2)
         context = context.permute(1,2,0).contiguous().view(batch_size, self.ENC_hsize*2)
 
-        output = to_var(torch.zeros(sent_len, batch_size, self.trg_vocab_size))
-        output[0,:,2] = 1 
+        output = to_var(torch.zeros(sent_len, batch_size, self.trg_vocab_size).fill_(-1))
+        output[0,:,2] = 0
         
         word = to_var(torch.LongTensor(batch_size).fill_(2)) #
         

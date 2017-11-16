@@ -56,7 +56,7 @@ def main(options):
   trg_vocab_size = len(trg_vocab)
 
   nmt = NMT(src_vocab_size, trg_vocab_size)
-  nmt = torch.load(open("model.py.nll_0.80.epoch_11", 'rb'))
+  nmt = torch.load(open("model.py.nll_0.78.epoch_23", 'rb'))
   nmt.eval()
 
   if torch.cuda.is_available():
@@ -64,7 +64,7 @@ def main(options):
   else:
     nmt.cpu()
 
-  with open('data/output3.txt', 'w') as f_write:
+  with open('data/output_final1.txt', 'w') as f_write:
     for i in range(len(src_test)):
       test_src_batch = to_var(torch.unsqueeze(src_test[i],1), volatile=True) 
       test_trg_batch = to_var(torch.unsqueeze(trg_test[i],1), volatile=True)
