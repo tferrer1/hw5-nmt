@@ -12,10 +12,8 @@ def to_var(input, volatile=False):
 class ATTN(nn.Module):
     def __init__(self, in_dim, out_dim):
         super(ATTN, self).__init__()
-        #self.Wi = nn.Linear(in_dim, in_dim, bias=False)
-        #self.Wo = nn.Linear(out_dim, in_dim, bias=False)
-        self.Wi = nn.Linear(in_dim, out_dim/2, bias=False)
-        self.Wo = nn.Linear(out_dim, out_dim/2, bias=False)
+        self.Wi = nn.Linear(in_dim, in_dim, bias=False)
+        self.Wo = nn.Linear(out_dim, in_dim, bias=False)
         self.softmax = nn.Softmax()
         self.tanh = nn.Tanh()
     def forward(self, input, h):
@@ -51,10 +49,8 @@ class NMT(nn.Module):
         self.GEN = nn.Linear(in_features=self.DEC_hsize, out_features=trg_vocab_size)
         # miscellaneous
         self.logsoftmax = nn.LogSoftmax()
-        #self.softmax = nn.Softmax()
-        #self.tanh = nn.Tanh()
 
-    def forward(self, input_src_batch, input_trg_batch, training=False):        
+    def forward(self, input_src_batch, input_trg_batch, training=False):
         sent_len = input_trg_batch.size()[0]
 
         encoder_input = self.EEMB(input_src_batch)
@@ -65,12 +61,11 @@ class NMT(nn.Module):
         hidden = hidden.permute(1,2,0).contiguous().view(batch_size, self.ENC_hsize*2)
         context = context.permute(1,2,0).contiguous().view(batch_size, self.ENC_hsize*2)
 
-        output = to_var(torch.FloatTensor(sent_len, batch_size, self.trg_vocab_size))
-        output[0] = to_var(torch.FloatTensor(batch_size, self.trg_vocab_size).fill_(-1))
+        output = to_var(torch.zeros(sent_len, batch_size, self.trg_vocab_size).fill_(-1))
         output[0,:,2] = 0
-        
+
         word = to_var(torch.LongTensor(batch_size).fill_(2)) #
-        
+
         for i in xrange(1, sent_len):
             c_t = self.ATTN(encoder_output, hidden)
 
@@ -82,8 +77,9 @@ class NMT(nn.Module):
             (hidden, context) = self.DEC(decoder_input, (hidden, context))
 
 
-            output[i] = self.logsoftmax(self.GEN(hidden))
+            word = self.logsoftmax(self.GEN(hidden))
+            output[i] = word
             if not training:
-                _, word = torch.max(output[i], dim=1) 
+                _, word = torch.max(word, dim=1)
 
         return output
