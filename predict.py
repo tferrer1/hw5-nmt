@@ -56,7 +56,7 @@ def main(options):
   trg_vocab_size = len(trg_vocab)
 
   #nmt = NMT(src_vocab_size, trg_vocab_size)
-  nmt = torch.load(open("model.py.nll_0.78.epoch_23", 'rb'))
+  nmt = torch.load(open("model.py.nll_1.12.epoch_7", 'rb'))
   nmt.eval()
 
   if torch.cuda.is_available():
@@ -72,14 +72,14 @@ def main(options):
       test_trg_batch = test_trg_batch.view(-1, 1)
 
       batch_result = nmt(test_src_batch, test_trg_batch)
-
-      for k in range(sys_out_batch.size()[1]):
+      '''
+      for k in range(batch_result.size()[1]):
           sent = []
-          for i in range(1, sys_out_batch.size()[0]):
-              sent.append(trg_vocab.itos[sys_out_batch[i,k].data.numpy()[0]])
+          for i in range(1, batch_result.size()[0]):
+              sent.append(trg_vocab.itos[batch_result[i,k].data.cpu().numpy()[0]])
           print(' '.join(sent).encode('utf-8').strip())
       '''
-      s = ""
+      s = []
       for ix in batch_result:
         idx = np.argmax(ix.data.cpu().numpy())
 
@@ -87,13 +87,12 @@ def main(options):
           continue
         if idx == 3: # if </s>, end the loop
           break 
-        s += trg_vocab.itos[idx] + " "
-
+        s.append(trg_vocab.itos[idx])
+      print(' '.join(s).encode('utf-8').strip())
       #print s.encode('utf-8')
       #if len(s): s += '\n'
-      s += '\n'
-      f_write.write(s.encode('utf-8'))  	
-      '''
+      #s += '\n'
+      #f_write.write(s.encode('utf-8'))
 
 if __name__ == "__main__":
   ret = parser.parse_known_args()
