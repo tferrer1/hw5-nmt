@@ -66,10 +66,12 @@ def main(options):
 
   with open('data/output.txt', 'w') as f_write:
     for i in range(len(src_test)):
-      test_src_batch = to_var(src_test[i], volatile=True) 
-      test_trg_batch = to_var(trg_test[i], volatile=True)
-      test_src_batch = test_src_batch.view(-1, 1)
-      test_trg_batch = test_trg_batch.view(-1, 1)
+      test_src_batch = to_var(torch.unsqueeze(src_test[i],1), volatile=True) 
+      test_trg_batch = to_var(torch.unsqueeze(trg_test[i],1), volatile=True)
+      #test_src_batch = to_var(src_test[i], volatile=True) 
+      #test_trg_batch = to_var(trg_test[i], volatile=True)
+      #test_src_batch = test_src_batch.view(-1, 1)
+      #test_trg_batch = test_trg_batch.view(-1, 1)
 
       batch_result = nmt(test_src_batch, test_trg_batch)
       '''
