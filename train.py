@@ -48,6 +48,10 @@ def to_var(input, volatile=False):
 
 def main(options):
 
+  if options.gpuid:
+    cuda.set_device(options.gpuid[0])
+    print("hello")
+    
   src_train, src_dev, src_test, src_vocab = torch.load(open("data/hw5.words", 'rb'))
   trg_train, trg_dev, trg_test, trg_vocab = torch.load(open("data/hw5.phoneme", 'rb'))
 
