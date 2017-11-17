@@ -49,14 +49,14 @@ def to_var(input, volatile=True):
 
 def main(options):
 
-  _, _, src_test, src_vocab = torch.load(open("data/hw5.words", 'rb'))
-  _, _, trg_test, trg_vocab = torch.load(open("data/hw5.phoneme", 'rb'))
+  _, _, src_test, src_vocab = torch.load(open(options.data_file + "." + options.src_lang, 'rb'))
+  _, _, trg_test, trg_vocab = torch.load(open(options.data_file + "." + options.trg_lang, 'rb'))
 
   src_vocab_size = len(src_vocab)
   trg_vocab_size = len(trg_vocab)
 
-  #nmt = NMT(src_vocab_size, trg_vocab_size)
-  nmt = torch.load(open("model.py.nll_1.12.epoch_7", 'rb'))
+  nmt = NMT(src_vocab_size, trg_vocab_size)
+  nmt = torch.load(open("model.py.nll_0.68.epoch_18", 'rb'))
   nmt.eval()
 
   if torch.cuda.is_available():
@@ -64,23 +64,12 @@ def main(options):
   else:
     nmt.cpu()
 
-  with open('data/output.txt', 'w') as f_write:
+  with open('data/output_tanay.txt', 'w') as f_write:
     for i in range(len(src_test)):
-      test_src_batch = to_var(torch.unsqueeze(src_test[i],1), volatile=True) 
+      test_src_batch = to_var(torch.unsqueeze(src_test[i],1), volatile=True)
       test_trg_batch = to_var(torch.unsqueeze(trg_test[i],1), volatile=True)
-      #test_src_batch = to_var(src_test[i], volatile=True) 
-      #test_trg_batch = to_var(trg_test[i], volatile=True)
-      #test_src_batch = test_src_batch.view(-1, 1)
-      #test_trg_batch = test_trg_batch.view(-1, 1)
 
       batch_result = nmt(test_src_batch, test_trg_batch)
-      '''
-      for k in range(batch_result.size()[1]):
-          sent = []
-          for i in range(1, batch_result.size()[0]):
-              sent.append(trg_vocab.itos[batch_result[i,k].data.cpu().numpy()[0]])
-          print(' '.join(sent).encode('utf-8').strip())
-      '''
       s = ""
       for ix in batch_result:
         idx = np.argmax(ix.data.cpu().numpy())
@@ -88,10 +77,14 @@ def main(options):
         if idx == 2: # if <s>, don't write it
           continue
         if idx == 3: # if </s>, end the loop
-          break 
+          break
         s += trg_vocab.itos[idx] + " "
+
+      #print s.encode('utf-8')
+      #if len(s): s += '\n'
       s += '\n'
-      f_write.write(s.encode('utf-8')) 
+      f_write.write(s.encode('utf-8'))
+
 
 if __name__ == "__main__":
   ret = parser.parse_known_args()
