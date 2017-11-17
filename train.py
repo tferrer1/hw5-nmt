@@ -48,14 +48,8 @@ def to_var(input, volatile=False):
 
 def main(options):
 
-  use_cuda = False
-  if options.gpuid:
-    use_cuda = True
-    cuda.set_device(options.gpuid[0])
-    print("hello")
-    
-  src_train, src_dev, src_test, src_vocab = torch.load(open("data/hw5.words", 'rb'))
-  trg_train, trg_dev, trg_test, trg_vocab = torch.load(open("data/hw5.phoneme", 'rb'))
+  src_train, src_dev, src_test, src_vocab = torch.load(open(options.data_file + "." + options.src_lang, 'rb'))
+  trg_train, trg_dev, trg_test, trg_vocab = torch.load(open(options.data_file + "." + options.trg_lang, 'rb'))
 
   batched_train_src, batched_train_src_mask, sort_index = utils.tensor.advanced_batchize(src_train, options.batch_size, src_vocab.stoi["<blank>"])
   batched_train_trg, batched_train_trg_mask = utils.tensor.advanced_batchize_no_sort(trg_train, options.batch_size, trg_vocab.stoi["<blank>"], sort_index)
@@ -65,8 +59,8 @@ def main(options):
   src_vocab_size = len(src_vocab)
   trg_vocab_size = len(trg_vocab)
 
-  nmt = NMT(src_vocab_size, trg_vocab_size) # TODO: add more arguments as necessary 
-  if use_cuda:
+  nmt = NMT(src_vocab_size, trg_vocab_size) # TODO: add more arguments as necessary
+  if torch.cuda.is_available():
     nmt.cuda()
   else:
     nmt.cpu()
@@ -86,7 +80,7 @@ def main(options):
       train_src_mask = to_var(batched_train_src_mask[batch_i])
       train_trg_mask = to_var(batched_train_trg_mask[batch_i])
 
-      sys_out_batch = nmt(train_src_batch, train_trg_batch, training=True)  # (trg_seq_len, batch_size, trg_vocab_size) # TODO: add more arguments as necessary 
+      sys_out_batch = nmt(train_src_batch, train_trg_batch, training=True)  # (trg_seq_len, batch_size, trg_vocab_size) # TODO: add more arguments as necessary
       train_trg_mask = train_trg_mask.view(-1)
       train_trg_batch = train_trg_batch.view(-1)
       train_trg_batch = train_trg_batch.masked_select(train_trg_mask)
@@ -94,9 +88,7 @@ def main(options):
       sys_out_batch = sys_out_batch.view(-1, trg_vocab_size)
       sys_out_batch = sys_out_batch.masked_select(train_trg_mask).view(-1, trg_vocab_size)
       loss = criterion(sys_out_batch, train_trg_batch)
-      if i % 100 == 0:
-          print(len(batched_train_src))
-          logging.debug("loss at batch {0}: {1}".format(i, loss.data[0]))
+      # logging.debug("loss at batch {0}: {1}".format(i, loss.data[0]))
       optimizer.zero_grad()
       loss.backward()
       optimizer.step()
@@ -110,7 +102,7 @@ def main(options):
       dev_src_mask = to_var(batched_dev_src_mask[batch_i], volatile=True)
       dev_trg_mask = to_var(batched_dev_trg_mask[batch_i], volatile=True)
 
-      sys_out_batch = nmt(dev_src_batch, dev_trg_batch)  # (trg_seq_len, batch_size, trg_vocab_size) # TODO: add more arguments as necessary 
+      sys_out_batch = nmt(dev_src_batch, dev_trg_batch)  # (trg_seq_len, batch_size, trg_vocab_size) # TODO: add more arguments as necessary
       dev_trg_mask = dev_trg_mask.view(-1)
       dev_trg_batch = dev_trg_batch.view(-1)
       dev_trg_batch = dev_trg_batch.masked_select(dev_trg_mask)
@@ -119,14 +111,14 @@ def main(options):
       sys_out_batch = sys_out_batch.masked_select(dev_trg_mask).view(-1, trg_vocab_size)
       #sys_out_batch = sys_out_batch.masked_select(dev_trg_mask).view(-1, trg_vocab_size)
       loss = criterion(sys_out_batch, dev_trg_batch)
-      #logging.debug("dev loss at batch {0}: {1}".format(batch_i, loss.data[0]))
+      # logging.debug("dev loss at batch {0}: {1}".format(batch_i, loss.data[0]))
       dev_loss += loss
     dev_avg_loss = dev_loss / len(batched_dev_src)
     logging.info("Average loss value per instance is {0} at the end of epoch {1}".format(dev_avg_loss.data[0], epoch_i))
 
-    if (last_dev_avg_loss - dev_avg_loss).data[0] < options.estop:
-      logging.info("Early stopping triggered with threshold {0} (previous dev loss: {1}, current: {2})".format(epoch_i, last_dev_avg_loss.data[0], dev_avg_loss.data[0]))
-      break
+    # if (last_dev_avg_loss - dev_avg_loss).data[0] < options.estop:
+      # logging.info("Early stopping triggered with threshold {0} (previous dev loss: {1}, current: {2})".format(epoch_i, last_dev_avg_loss.data[0], dev_avg_loss.data[0]))
+      # break
     torch.save(nmt, open(options.model_file + ".nll_{0:.2f}.epoch_{1}".format(dev_avg_loss.data[0], epoch_i), 'wb'), pickle_module=dill)
     last_dev_avg_loss = dev_avg_loss
 
