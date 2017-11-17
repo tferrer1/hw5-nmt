@@ -79,7 +79,7 @@ def main(options):
               sent.append(trg_vocab.itos[batch_result[i,k].data.cpu().numpy()[0]])
           print(' '.join(sent).encode('utf-8').strip())
       '''
-      s = []
+      s = ""
       for ix in batch_result:
         idx = np.argmax(ix.data.cpu().numpy())
 
@@ -87,12 +87,9 @@ def main(options):
           continue
         if idx == 3: # if </s>, end the loop
           break 
-        s.append(trg_vocab.itos[idx])
-      print(' '.join(s).encode('utf-8').strip())
-      #print s.encode('utf-8')
-      #if len(s): s += '\n'
-      #s += '\n'
-      #f_write.write(s.encode('utf-8'))
+        s += trg_vocab.itos[idx] + " "
+      s += '\n'
+      f_write.write(s.encode('utf-8')) 
 
 if __name__ == "__main__":
   ret = parser.parse_known_args()
