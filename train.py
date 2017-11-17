@@ -48,7 +48,9 @@ def to_var(input, volatile=False):
 
 def main(options):
 
+  use_cuda = False
   if options.gpuid:
+    use_cuda = True
     cuda.set_device(options.gpuid[0])
     print("hello")
     
@@ -64,7 +66,7 @@ def main(options):
   trg_vocab_size = len(trg_vocab)
 
   nmt = NMT(src_vocab_size, trg_vocab_size) # TODO: add more arguments as necessary 
-  if torch.cuda.is_available():
+  if use_cuda:
     nmt.cuda()
   else:
     nmt.cpu()
