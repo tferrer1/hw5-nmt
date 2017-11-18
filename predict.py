@@ -38,6 +38,7 @@ parser.add_argument("--estop", default=1e-2, type=float,
                     help="Early stopping criteria on the testelopment set. (default=1e-2)")
 parser.add_argument("--gpuid", default=[], nargs='+', type=int,
                     help="ID of gpu testice to use. Empty implies cpu usage.")
+parser.add_argument("--modelname", default="model.py.nll_0.68.epoch_18")
 # feel free to add more arguments as you need
 
 
@@ -56,7 +57,7 @@ def main(options):
   trg_vocab_size = len(trg_vocab)
 
   nmt = NMT(src_vocab_size, trg_vocab_size)
-  nmt = torch.load(open("model.py.nll_0.68.epoch_18", 'rb'))
+  nmt = torch.load(open(options.modelname, 'rb'))
   nmt.eval()
 
   if torch.cuda.is_available():
