@@ -66,12 +66,12 @@ def main(options):
 
   with open('data/output_tanay.txt', 'w') as f_write:
     for i in range(len(src_test)):
-      test_src_batch = to_var(torch.unsqueeze(src_test[i],1), volatile=True)
-      test_trg_batch = to_var(torch.unsqueeze(trg_test[i],1), volatile=True)
+      src_test = to_var(torch.unsqueeze(src_test[i],1), volatile=True)
+      trg_test = to_var(torch.unsqueeze(trg_test[i],1), volatile=True)
 
-      batch_result = nmt(test_src_batch, test_trg_batch)
+      results = nmt(src_test, trg_test)
       s = ""
-      for ix in batch_result:
+      for ix in results:
         idx = np.argmax(ix.data.cpu().numpy())
 
         if idx == 2: # if <s>, don't write it
