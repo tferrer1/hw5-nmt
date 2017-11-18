@@ -93,7 +93,7 @@ class EnsembleNMT(nn.Module):
         encoded = []
         hiddens = []
         for model in self.models:
-            encoder_input = model.EEMB(train_src_batch)
+            encoder_input = model.EEMB(input_src_batch)
             sys_out_batch, (h,c) = model.ENC(encoder_input)
             batch_size = sys_out_batch.size()[1]
             h = h.permute(1,2,0).contiguous().view(batch_size, 2*model.ENC_hsize)
@@ -103,14 +103,14 @@ class EnsembleNMT(nn.Module):
         sent_len = input_trg_batch.size()[0]
         batch_size = input_trg_batch.size()[1]
 
-        results = Variable(torch.LongTensor(sent_len, batch_size))
-        word = Variable(torch.LongTensor(batch_size).fill_(2))
+        results = to_var(torch.LongTensor(sent_len, batch_size))
+        word = to_var(torch.LongTensor(batch_size).fill_(2))
         results[0] = word
 
         for i in range(1, sent_len - 1):
             total_word = []
             next_h = []
-            for j, model in enumerate(self.models)):
+            for j, model in enumerate(self.models):
                 sys_out_batch = encoded[j]
                 h, c = hiddens[j]
 
@@ -123,7 +123,7 @@ class EnsembleNMT(nn.Module):
                 w2 = model.logsoftmax(model.GEN(h))
                 next_h.append((h,c))
                 total_word.append(w2)
-                
+
             w = total_word
             hidden = next_h
             total = 0
@@ -133,7 +133,7 @@ class EnsembleNMT(nn.Module):
             _, word = torch.max(total, dim=1)
             results[i] = word
 
-        word = Variable(torch.LongTensor(batch_size).fill_(3))
+        word = to_var(torch.LongTensor(batch_size).fill_(3))
         results[sent_len - 1] = word
         return results
-            
+

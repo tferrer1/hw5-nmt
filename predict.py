@@ -67,10 +67,10 @@ def main(options):
 
   with open('data/output_tanay.txt', 'w') as f_write:
     for i in range(len(src_test)):
-      src_test = to_var(torch.unsqueeze(src_test[i],1), volatile=True)
-      trg_test = to_var(torch.unsqueeze(trg_test[i],1), volatile=True)
+      src = to_var(torch.unsqueeze(src_test[i],1), volatile=True)
+      trg = to_var(torch.unsqueeze(trg_test[i],1), volatile=True)
 
-      results = nmt(src_test, trg_test)
+      results = nmt(src, trg)
       s = ""
       for ix in results:
         idx = np.argmax(ix.data.cpu().numpy())

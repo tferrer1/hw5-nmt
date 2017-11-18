@@ -8,7 +8,7 @@ import logging
 import torch
 from torch import cuda
 from torch.autograd import Variable
-from model import NMT
+from model import *
 import numpy as np
 
 logging.basicConfig(
@@ -49,7 +49,7 @@ def to_var(input, volatile=True):
     return x
 
 def main(options):
-  files = ['model_save.nll_0.73.epoch_15', 'model_save.nll_0.73.epoch_15', 'model_save.nll_0.73.epoch_15', 'model_save.nll_0.73.epoch_15']
+  files = ['model_results/model.py.nll_0.74.epoch_25', 'model_results/model.py.nll_0.74.epoch_26', 'model_results/model.py.nll_0.74.epoch_35', 'model_results/model.py.nll_0.74.epoch_36']
   models = []
   for my_file in files:
     model = torch.load(my_file)
@@ -76,14 +76,14 @@ def main(options):
       test_trg_batch = to_var(torch.unsqueeze(trg_test[ix],1), volatile=True)
       test_src_batch = test_src_batch.view(-1, 1)
       test_trg_batch = test_trg_batch.view(-1, 1)
-      
+
       sys_out_batch = nmt(test_src_batch, test_trg_batch)
       for j in range(sys_out_batch.size()[1]):
           sent = []
           for i in range(1, sys_out_batch.size()[0]):
               # print(sys_out_batch[i,j].data.numpy()[0])
-              sent.append(trg_vocab.itos[sys_out_batch[i,j].data.numpy()[0]])
-          print(' '.join(sent).encode('utf-8').strip())
+              sent.append(trg_vocab.itos[sys_out_batch[i,j].data.cpu().numpy()[0]])
+          f_write.write(' '.join(sent).encode('utf-8').strip() + '\n')
 
 
 if __name__ == "__main__":
